@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Store model weights and datasets in the corresponding ModelScope repositories.
+object_detection/code/model/*.pt
+object_detection/code/*.ttf
+scene_segmentation_outputs_v2/
