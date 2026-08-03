@@ -7,7 +7,5 @@ __pycache__/
 .venv/
 venv/
 
-# Store model weights and datasets in the corresponding ModelScope repositories.
-object_detection/code/model/*.pt
-object_detection/code/*.ttf
+# Store large generated datasets in the corresponding ModelScope repository.
 scene_segmentation_outputs_v2/
