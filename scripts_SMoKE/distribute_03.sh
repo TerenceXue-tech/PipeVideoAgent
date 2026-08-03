@@ -6,7 +6,7 @@ set -euo pipefail
 # =========================
 ROOT_DIR="/data/xtc/PipeVideo"
 PYTHON_BIN="/home/xtc/.conda/envs/pipevideo/bin/python"
-SCRIPT_PATH="${ROOT_DIR}/scripts_baseline/03_refine_scene.py"
+SCRIPT_PATH="${ROOT_DIR}/scripts_SMoKE/03_refine_scene.py"
 
 SCENE_ROOT="${ROOT_DIR}/scene_segmentation_outputs"
 VIDEO_LIST_JSON="${ROOT_DIR}/video_list_1000.json"

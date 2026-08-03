@@ -6,43 +6,24 @@ set -euo pipefail
 # =========================
 ROOT_DIR="/data/xtc/PipeVideo"
 PYTHON_BIN="/home/xtc/.conda/envs/pipevideo/bin/python"
-SCRIPT_PATH="${ROOT_DIR}/scripts_baseline/02_get_key_frame.py"
+SCRIPT_PATH="${ROOT_DIR}/scripts_SMoKE/01_scene_segmentation.py"
+MODEL_PATH="/data/xtc/LLMs/siglip2-giant-opt-patch16-384"
 
-# scene_segmentation 输出根目录（02脚本会在其下各视频目录写 key_frames）
-SCENE_ROOT="${ROOT_DIR}/scene_segmentation_outputs"
 VIDEO_LIST_JSON="${ROOT_DIR}/video_list_1000.json"
-
-# 并行进程数
-NUM_PROCS=8
-
-# 如需限制到某些 GPU，可配置；02 脚本主要是 CPU/IO，此项可保留默认
+NUM_PROCS=4
 GPU_IDS_CSV="0,1,2,3"
+OUT_BASE_DIR="${ROOT_DIR}/scene_segmentation_outputs"
 
-# 传给 02_get_key_frame.py 的参数
-SHADE_PRE_SECONDS="1.0"
-SHADE_POST_SECONDS="4.0"
-WINDOW_SIZE="16"
-TARGET_FRAMES="8"
-OUTPUT_SUBDIR="key_frames"
-MEAN_MOTION_WEIGHT="1"
-ACTIVE_RATIO_WEIGHT="none"
-PEAK_WEIGHT="none"
-SHARPNESS_WEIGHT="none"
+RUN_TAG="$(date +%Y%m%d_%H%M%S)"   # 运行标记；可改成固定字符串
+TMP_DIR="${ROOT_DIR}/tmp_scene_split_${RUN_TAG}"
+LOG_DIR="${ROOT_DIR}/logs_scene_split_${RUN_TAG}"
+KEEP_TMP_JSON=0                     # 1=保留分片json，0=任务结束后删除
+KEEP_LOG_DIR=1                      # 1=保留日志目录，0=任务结束后删除
 
-RUN_TAG="$(date +%Y%m%d_%H%M%S)"
-TMP_DIR="${ROOT_DIR}/tmp_keyframe_split_${RUN_TAG}"
-LOG_DIR="${ROOT_DIR}/logs_keyframe_split_${RUN_TAG}"
-KEEP_TMP_JSON=0
-KEEP_LOG_DIR=1
-
-mkdir -p "${TMP_DIR}" "${LOG_DIR}" "${SCENE_ROOT}"
+mkdir -p "${TMP_DIR}" "${LOG_DIR}" "${OUT_BASE_DIR}"
 
 if [[ ! -f "${VIDEO_LIST_JSON}" ]]; then
   echo "[ERROR] video list not found: ${VIDEO_LIST_JSON}"
-  exit 1
-fi
-if [[ ! -d "${SCENE_ROOT}" ]]; then
-  echo "[ERROR] scene root not found: ${SCENE_ROOT}"
   exit 1
 fi
 
@@ -53,10 +34,11 @@ if [[ "${GPU_COUNT}" -eq 0 ]]; then
   exit 1
 fi
 
-echo "[INFO] SCENE_ROOT=${SCENE_ROOT}"
 echo "[INFO] VIDEO_LIST_JSON=${VIDEO_LIST_JSON}"
+echo "[INFO] MODEL_PATH=${MODEL_PATH}"
 echo "[INFO] NUM_PROCS=${NUM_PROCS}"
 echo "[INFO] GPU_IDS=${GPU_IDS_CSV}"
+echo "[INFO] OUT_BASE_DIR=${OUT_BASE_DIR}"
 echo "[INFO] TMP_DIR=${TMP_DIR}"
 echo "[INFO] LOG_DIR=${LOG_DIR}"
 echo "[INFO] KEEP_TMP_JSON=${KEEP_TMP_JSON}"
@@ -151,7 +133,6 @@ trap 'on_signal TERM' TERM
 for ((i=0; i<NUM_PROCS; i++)); do
   SHARD_JSON="${TMP_DIR}/video_list_part_$(printf "%02d" "${i}").json"
   LOG_PATH="${LOG_DIR}/part_$(printf "%02d" "${i}").log"
-  SHARD_SUMMARY="${LOG_DIR}/key_frame_selection_summary_part_$(printf "%02d" "${i}").json"
   GPU_ID="${GPU_IDS[$((i % GPU_COUNT))]}"
 
   if [[ ! -f "${SHARD_JSON}" ]]; then
@@ -174,20 +155,10 @@ PY
 
   echo "[LAUNCH] part=${i} size=${SHARD_SIZE} gpu=${GPU_ID} log=${LOG_PATH}"
   CUDA_VISIBLE_DEVICES="${GPU_ID}" \
-  "${PYTHON_BIN}" "${SCRIPT_PATH}" \
-    --scene-root "${SCENE_ROOT}" \
-    --video-list "${SHARD_JSON}" \
-    --shade-pre-seconds "${SHADE_PRE_SECONDS}" \
-    --shade-post-seconds "${SHADE_POST_SECONDS}" \
-    --window-size "${WINDOW_SIZE}" \
-    --target-frames "${TARGET_FRAMES}" \
-    --output-subdir "${OUTPUT_SUBDIR}" \
-    --mean-motion-weight "${MEAN_MOTION_WEIGHT}" \
-    --active-ratio-weight "${ACTIVE_RATIO_WEIGHT}" \
-    --peak-weight "${PEAK_WEIGHT}" \
-    --sharpness-weight "${SHARPNESS_WEIGHT}" \
-    --summary-path "${SHARD_SUMMARY}" \
-    > "${LOG_PATH}" 2>&1 &
+  MODEL_PATH="${MODEL_PATH}" \
+  VIDEO_LIST_PATH="${SHARD_JSON}" \
+  OUTPUT_DIR="${OUT_BASE_DIR}" \
+  "${PYTHON_BIN}" "${SCRIPT_PATH}" > "${LOG_PATH}" 2>&1 &
 
   PIDS+=("$!")
   STARTED=$((STARTED + 1))
