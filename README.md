@@ -41,20 +41,6 @@ PipeVideoAgent denotes the complete video-level pipeline. PipeVideoLM is its con
 
 ## Method
 
-```mermaid
-flowchart LR
-    A[Raw PTZ Inspection Video] --> B[SMoKE]
-    B --> B1[Adaptive Stable-Scene Segmentation]
-    B1 --> B2[Motion-Window Key-Frame Selection]
-    B2 --> B3[Adjacent-Scene Deduplication]
-    B3 --> B4[Deployment-Time Target Filtering]
-    B4 --> C[Scene-Wise Key-Frame Sequences]
-    C --> D[PipeVideoLM]
-    D --> E[Structured Scene Semantics and Risk]
-    E --> F[Cross-Scene Semantic Fusion]
-    F --> G[Traceable Video-Level Assessment]
-```
-
 ### SMoKE
 
 SMoKE, short for **scene-wise motion-window key-frame extraction**, converts a raw PTZ inspection video into compact scene-organized key-frame sequences.
@@ -159,33 +145,6 @@ The paper uses video-level splitting, ensuring that scenes from the same source 
 | Scene-level test | 398 scenes | 196 | 161 | 41 |
 | Video-level training | 548 videos | 161 | 285 | 102 |
 | Video-level test | 236 videos | 81 | 123 | 32 |
-
-The released SFT files use the following structure:
-
-```json
-[
-  {
-    "messages": [
-      {
-        "role": "system",
-        "content": "..."
-      },
-      {
-        "role": "user",
-        "content": "..."
-      },
-      {
-        "role": "assistant",
-        "content": "..."
-      }
-    ],
-    "images": [
-      "/absolute/path/to/frame_001.jpg",
-      "/absolute/path/to/frame_002.jpg"
-    ]
-  }
-]
-```
 
 ### Download the Dataset
 
@@ -464,13 +423,3 @@ If this project is useful in your research, please cite:
   howpublished = {Manuscript}
 }
 ```
-
-## Acknowledgments
-
-This project builds upon Qwen3.5, SigLIP2, MS-SWIFT, PyTorch, Transformers, and YOLOv5. We thank their developers and open-source communities.
-
-## Contact
-
-For questions about the paper or project, please contact:
-
-- **Chao Shang** — `c-shang@tsinghua.edu.cn`
